@@ -22,7 +22,7 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#2b2823" />
-    <title>{home.name} · 示意版</title>
+    <title>{home.name} · 个人作品集</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preload" href="/fonts/smiley-sans.woff2" as="font" type="font/woff2" crossorigin />
     <script is:inline>
@@ -95,7 +95,7 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
           <div data-light class="pointer-events-none absolute inset-x-0 top-0 h-[34%]" aria-hidden="true"></div>
         </div>
         <div class="hero-text absolute inset-x-0 bottom-0 px-6 sm:px-12">
-          <h1 class="font-serif text-5xl leading-none tracking-[0.12em] sm:text-7xl">{home.name}</h1>
+          <h1 class="font-serif text-[2.35rem] leading-none tracking-[0.12em] sm:text-7xl">{home.name}</h1>
           <ul class="text-bone/75 mt-5 space-y-1 text-sm leading-relaxed sm:mt-7 sm:text-[15px]">
             {home.heroLines.map((line) => <li>{line}</li>)}
           </ul>
@@ -173,8 +173,8 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
         <p class="text-bone/55 text-xs tracking-[0.35em]">LET'S TALK</p>
         <p class="mt-4 text-3xl font-light sm:text-5xl">一起聊聊？</p>
         <div class="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-3 text-sm">
-          <button type="button" data-copy={home.email} class="bg-bone text-umber cursor-pointer rounded-full px-6 py-3">
-            <span data-copy-label>复制邮箱 · {home.email}</span>
+          <button type="button" data-copy={home.email} class="link-line cursor-pointer break-all" aria-label={`复制邮箱 ${home.email}`}>
+            <span data-copy-label>{home.email}</span>
           </button>
           <span class="text-bone/40 hidden sm:inline" aria-hidden="true">·</span>
           {hasResume ? (
@@ -305,8 +305,9 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
           height: 22%;
           background: linear-gradient(to bottom, rgb(43 40 35 / 0), rgb(43 40 35 / 0.55) 40%, #2b2823 92%);
         }
+        /* 文字块贴近底部，只给左下角时间和右下角「联系我」留位置 */
         .hero-text {
-          padding-bottom: 6.25rem;
+          padding-bottom: 4.75rem;
         }
       }
 
@@ -478,6 +479,19 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
       }
       .light-mode [data-menu-open] {
         visibility: hidden;
+      }
+      /* 手机项目页：不显示底部的时间和「联系我」 */
+      @media (max-width: 767px) {
+        .light-mode .corner:is([aria-label='当地时间'], [data-copy]) {
+          visibility: hidden;
+        }
+        /* 卡片跟着内容滚动：卡片本身不挡手指滑动，只有按钮、视频可以点 */
+        :global(.pinned.is-scrolly) {
+          pointer-events: none;
+        }
+        :global(.pinned.is-scrolly :is(button, a, video)) {
+          pointer-events: auto;
+        }
       }
       /* 每张卡片点开后的主题色 */
       :is(.stage, .card-face)[data-theme='cidi'] {
@@ -758,12 +772,28 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
         Object.assign(
           stageBody.style,
           innerWidth < 768
-            ? { left: '16px', right: '16px', top: `${r.top + r.height + 16}px`, bottom: '88px' }
-            : { left: `${r.left + r.width + 32}px`, right: '24px', top: '80px', bottom: '88px' },
+            ? // 手机：说明区占满屏幕，上面留出卡片的位置；滚动时卡片跟着一起往上走
+              { left: '16px', right: '16px', top: `${MOBILE_TOP}px`, bottom: '0px', paddingTop: `${r.top + r.height + 16 - MOBILE_TOP}px`, paddingBottom: '2rem' }
+            : { left: `${r.left + r.width + 32}px`, right: '24px', top: '80px', bottom: '88px', paddingTop: '', paddingBottom: '' },
         );
+      // 手机：顶部导航下方开始是可滚动区域
+      const MOBILE_TOP = 64;
+      const followScroll = () => {
+        if (!clone) return;
+        const mobile = innerWidth < 768 && openId;
+        clone.classList.toggle('is-scrolly', !!mobile);
+        if (!mobile) {
+          Object.assign(clone.style, { transform: 'none', clipPath: '' });
+          return;
+        }
+        const y = stageBody.scrollTop;
+        const hidden = Math.max(0, MOBILE_TOP - (parseFloat(clone.style.top) - y));
+        Object.assign(clone.style, { transform: `translateY(${-y}px)`, clipPath: hidden ? `inset(${hidden}px 0 0 0)` : '' });
+      };
 
       // 点开后：左侧卡片换成视频，右侧放说明（内容来自 CardDetail 的模板）
       const stageBody = document.querySelector<HTMLElement>('[data-stage-body]')!;
+      stageBody.addEventListener('scroll', followScroll, { passive: true });
       const fillDetail = (id: string) => {
         stage.dataset.theme = id;
         const face = document.querySelector<HTMLTemplateElement>(`[data-face-for="${id}"]`);
@@ -995,6 +1025,7 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
         closeBtn.hidden = false;
         if (run) await wait(DURATION);
         fillDetail(id);
+        followScroll();
         busy = false;
       };
 
@@ -1021,6 +1052,7 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
         placeBody(to);
         if (!reduced) next.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 450, easing: 'ease' });
         fillDetail(id);
+        followScroll();
         busy = false;
       };
       stage.addEventListener('click', (e) => {
@@ -1035,6 +1067,9 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
         const wrap = cardOf(id);
         closeBtn.hidden = true;
         clearDetail();
+        // 手机：卡片先回到没滚动时的位置，再缩回首页
+        clone.classList.remove('is-scrolly');
+        Object.assign(clone.style, { transform: 'none', clipPath: '' });
         if (!reduced) await wait(300);
         document.body.classList.remove('light-mode');
         const back = wrap.querySelector<HTMLElement>('.card-face')!.getBoundingClientRect();
@@ -1098,6 +1133,7 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
         const r = pinnedRect(openId);
         place(clone, r);
         placeBody(r);
+        followScroll();
       });
 
       // 链接带 #cidi 这类锚点时直接打开对应卡片
