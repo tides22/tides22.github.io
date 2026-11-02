@@ -1,0 +1,145 @@
+---
+// 一个文字小节：可带一张照片（左右交错）和照片说明；poem 时按诗歌排版；正文里的数字加粗
+import { Image } from 'astro:assets';
+
+interface Props {
+  sec: { title: string; body: string; poem: boolean; photo?: ImageMetadata; photoAlt: string; photoFile?: string; caption?: string };
+  j: number;
+  big?: boolean;
+  // 正文用黑色（反方向的钟）
+  ink?: boolean;
+}
+
+const { sec, j, big = false, ink = false } = Astro.props;
+const bold = (txt: string) => txt.split(/(\d[\d,.]*\+?%?)/).filter(Boolean);
+// 以"· "开头的行单独显示成一条
+const lines = sec.body.trim().split('\n').map((l) => l.trim()).filter(Boolean);
+---
+
+<section class:list={['story', big && 'is-big', ink && 'is-ink']}>
+  {
+    (sec.photo || sec.photoFile) && (
+      <figure class:list={['story-photo', j % 2 ? 'is-right' : 'is-left']}>
+        {sec.photo ? (
+          <Image src={sec.photo} alt={sec.photoAlt} widths={[480, 900]} sizes="(min-width: 768px) 420px, 100vw" class="w-full rounded-[4px]" />
+        ) : (
+          <div class="todo-box">
+            照片占位
+            <br />
+            {sec.photoFile}
+          </div>
+        )}
+        {sec.caption && <figcaption class="mt-2 text-xs opacity-60">{sec.caption}</figcaption>}
+      </figure>
+    )
+  }
+  <p class="story-title">{sec.title}</p>
+  {
+    sec.poem ? (
+      <div class="poem mt-5">
+        {sec.body
+          .trim()
+          .split(/\n\s*\n/)
+          .map((para) => (
+            <p>
+              {para.split('\n').map((line, i, all) => (
+                <>
+                  {line}
+                  {i < all.length - 1 && <br />}
+                </>
+              ))}
+            </p>
+          ))}
+      </div>
+    ) : (
+      <div class="story-body">
+        {lines.map((line) =>
+          line.startsWith('·') ? (
+            <p class="story-dot">
+              <span aria-hidden="true">·</span>
+              <span>{bold(line.replace(/^·\s*/, '')).map((p) => (/^\d/.test(p) ? <strong>{p}</strong> : p))}</span>
+            </p>
+          ) : (
+            <p>{bold(line).map((p) => (/^\d/.test(p) ? <strong>{p}</strong> : p))}</p>
+          ),
+        )}
+      </div>
+    )
+  }
+</section>
+
+<style>
+  .story {
+    color: color-mix(in oklab, var(--accent) 45%, #2b2823);
+  }
+  .story::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+  .story-photo {
+    margin-bottom: 1.25rem;
+  }
+  /* 长截图不要撑得太高 */
+  .story-photo :global(img) {
+    max-height: 460px;
+    width: auto;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+  @media (min-width: 768px) {
+    .story-photo {
+      width: 44%;
+    }
+    .story-photo.is-left {
+      float: left;
+      margin-right: 2rem;
+    }
+    .story-photo.is-right {
+      float: right;
+      margin-left: 2rem;
+    }
+  }
+  .story-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: color-mix(in oklab, var(--accent) 65%, #2b2823);
+  }
+  .story-body {
+    margin-top: 0.9rem;
+    font-size: 15px;
+    line-height: 1.9;
+  }
+  .story-dot {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .story.is-ink {
+    color: #2b2823;
+  }
+  .story-body strong {
+    font-weight: 700;
+    color: #2b2823;
+  }
+  /* 大号：山姆拼单正文、反方向的钟两栏 */
+  .story.is-big .story-title {
+    font-size: 1.45rem;
+  }
+  .story.is-big .story-body {
+    font-size: 1.125rem;
+    line-height: 2;
+  }
+  .story.is-big .poem {
+    font-size: 1.125rem;
+  }
+  .poem {
+    font-size: 15px;
+    line-height: 2.2;
+    letter-spacing: 0.03em;
+    color: #2b2823;
+  }
+  .poem p + p {
+    margin-top: 2.4em;
+  }
+</style>

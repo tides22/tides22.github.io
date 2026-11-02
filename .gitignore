@@ -1,0 +1,13 @@
+# 依赖和构建产物
+node_modules/
+dist/
+.astro/
+
+# 自动生成的字体子集（每次 npm run dev / build 会重新生成）
+public/fonts/smiley-sans.woff2
+
+# 原始素材不进版本库：里面有带手机号的简历、未打码的截图和大体积数据
+materials/
+
+.DS_Store
+sync/

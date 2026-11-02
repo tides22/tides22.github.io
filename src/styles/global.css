@@ -1,0 +1,162 @@
+@import 'tailwindcss';
+@import 'lxgw-wenkai-webfont/lxgwwenkai-regular.css';
+
+@font-face {
+  font-family: 'Smiley Sans';
+  src: url('/fonts/smiley-sans.woff2') format('woff2');
+  font-display: swap;
+}
+
+/* 方向 A「晴天海岸」的配色和字体 */
+@theme {
+  --color-paper: #f7fcfa;
+  --color-ink: #17302a;
+  --color-muted: #557068;
+  --color-line: #d7ebe2;
+  --color-leaf: #3cc48a;
+  --color-leaf-deep: #1e9466;
+  --color-leaf-soft: #e2f6ec;
+  --color-sea: #1c8fd6;
+  --color-sea-deep: #1572ad;
+  --color-sea-soft: #e4f3fc;
+  --color-sun: #ffd25a;
+  --color-sun-soft: #fff6d6;
+
+  /* 示意版：淡抹茶 / 墨绿 / 浅蓝 */
+  --color-matcha: #e6ecdb;
+  --color-matcha-soft: #f3f5ec;
+  --color-moss: #1f3a2e;
+  --color-moss-muted: #5d7064;
+  --color-mist: #dce9ee;
+  --color-cream: #eef2e6;
+  /* 首页：礁石取色的深棕 + 米白 */
+  --color-umber: #2b2823;
+  --color-bone: #f1ece2;
+  --color-haze: #c5d0d3;
+  --color-linen: #f3f1ec;
+  --font-serif: 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC', serif;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    'Noto Sans SC', sans-serif;
+  --font-display: 'Smiley Sans', var(--font-sans);
+  --font-hand: 'LXGW WenKai', 'Kaiti SC', 'STKaiti', serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 4.5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    line-height: 1.7;
+  }
+
+  ::selection {
+    @apply bg-sun/60;
+  }
+}
+
+/* 滚动到时轻轻浮现；没有 JS 或用户关闭了动效时直接显示 */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s ease;
+  transition-delay: var(--delay, 0s);
+}
+
+.js .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* 首页首屏背景里缓慢漂动的光斑 */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(12px, -16px) scale(1.06);
+  }
+}
+
+.drift {
+  animation: drift 14s ease-in-out infinite;
+}
+
+/* 示意版：小标签和链接胶囊 */
+.label {
+  @apply text-moss-muted text-xs tracking-[0.25em];
+}
+.pill {
+  @apply border-moss/30 hover:bg-moss hover:text-cream inline-block rounded-full border px-4 py-1.5 text-sm transition-colors;
+}
+
+/* 示意版：细线植物和「生长」动画 */
+.botanical .ln {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.botanical .pt {
+  fill: var(--f);
+  fill-opacity: var(--o);
+}
+.botanical .dot {
+  opacity: var(--o);
+}
+.botanical.grow .ln {
+  animation: grow-line 1.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation-delay: var(--d);
+}
+.botanical.grow .pt {
+  animation:
+    grow-line 1.6s cubic-bezier(0.4, 0, 0.2, 1) both,
+    grow-fill 1.2s ease both;
+  animation-delay: var(--d), calc(var(--d) + 0.8s);
+}
+.botanical.grow .dot {
+  animation: grow-dot 0.8s ease both;
+  animation-delay: calc(var(--d) + 0.6s);
+}
+@keyframes grow-line {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes grow-fill {
+  from {
+    fill-opacity: 0;
+  }
+}
+@keyframes grow-dot {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .botanical.grow .ln,
+  .botanical.grow .pt,
+  .botanical.grow .dot {
+    animation: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .drift {
+    animation: none;
+  }
+}

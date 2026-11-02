@@ -1,0 +1,19 @@
+---
+// 板块标题：小标签 + 手写体问句
+interface Props {
+  kicker: string;
+  title: string;
+  intro?: string;
+}
+
+const { kicker, title, intro } = Astro.props;
+---
+
+<header class="reveal mb-8 sm:mb-10">
+  <p class="text-leaf-deep mb-2 flex items-center gap-2 text-sm font-semibold tracking-widest">
+    <span class="bg-leaf inline-block h-1.5 w-1.5 rounded-full"></span>
+    {kicker}
+  </p>
+  <h2 class="font-hand text-3xl leading-tight sm:text-4xl">{title}</h2>
+  {intro && <p class="text-muted mt-3 max-w-xl">{intro}</p>}
+</header>

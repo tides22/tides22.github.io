@@ -1,0 +1,1135 @@
+---
+// 卡片点开后的内容：左侧（视频）和右侧（说明）各一个模板，点开时由页面脚本放进去
+import { Image, getImage } from 'astro:assets';
+import { getEntry } from 'astro:content';
+import { existsSync } from 'node:fs';
+import Text from '../Text.astro';
+import Story from './Story.astro';
+
+interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+const entry = await getEntry('details', id);
+const d = entry?.data;
+const poster = d?.poster && (await getImage({ src: d.poster, format: 'webp', width: 1280 }));
+// 浅棕色块，从上往下依次加深
+const tones = ['#ece2d4', '#e7dac9', '#e2d2be', '#ddcab3', '#d8c2a9', '#d3baa0'];
+// 站内文件（如 /files/xx.pdf）还没放进 public/ 时，显示"报告整理中"
+// 大数字里的中文单位（如"个百分点"）缩小显示，文字不变
+const splitFigure = (f: string) => f.split(/([\u4e00-\u9fa5]+)/).filter(Boolean).map((part) => ({ part, unit: /[\u4e00-\u9fa5]/.test(part) }));
+// 图片的大图地址（照片墙点开放大用）
+const zoomSrc = async (img: ImageMetadata) => (await getImage({ src: img, format: 'webp', width: 1800 })).src;
+const zoom = new Map<ImageMetadata, string>();
+for (const t of d?.tabs ?? []) {
+  for (const g of t.gallery?.items ?? []) if (g.image) zoom.set(g.image, await zoomSrc(g.image));
+  for (const g of t.shots) zoom.set(g.image, await zoomSrc(g.image));
+  for (const sec of t.sections) if (sec.photo) zoom.set(sec.photo, await zoomSrc(sec.photo));
+}
+// 数字条里的数字放大显示
+const splitNums = (txt: string) => txt.split(/([\d,.]+\+?%?)/).filter(Boolean).map((part) => ({ part, num: /^[\d,.]+\+?%?$/.test(part) }));
+const missing = (href: string) => href.startsWith('/files/') && !existsSync(`public${href}`);
+---
+
+{
+  d && !d.tabs.length && (
+    <>
+      <template data-face-for={id} data-ratio={d.videoRatio}>
+        <div class="face-media">
+          <div class="relative grid h-full w-full place-items-center overflow-hidden rounded-[4px] bg-black">
+            {d.video ? (
+              <>
+                <video data-lazy-video={d.video} muted playsinline preload="none" poster={poster?.src} class="cidi-video h-full w-full object-cover" />
+                <button type="button" data-play class="absolute inset-0 grid cursor-pointer place-items-center" aria-label="播放演示视频">
+                  <span class="grid h-16 w-16 place-items-center rounded-full bg-white/90 pl-1 text-2xl text-black">▶</span>
+                </button>
+              </>
+            ) : (
+              <>
+                {poster && <img src={poster.src} alt={d.posterAlt} class="h-full w-full object-contain" />}
+                <p class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent pt-16 pb-5 text-center text-sm tracking-[0.2em] text-white/90">演示视频制作中</p>
+              </>
+            )}
+          </div>
+        </div>
+      </template>
+
+      <template data-side-for={id}>
+        <div class="side cidi-grid">
+        <div class="cidi-side">
+          {d.demo && (
+            <div class="pb-8">
+              <a href={d.demo.href} target="_blank" rel="noopener" class="demo-link">
+                {d.demo.label} <span aria-hidden="true">↗</span>
+              </a>
+              {d.demo.note && <p class="mt-2 text-xs opacity-60">{d.demo.note}</p>}
+            </div>
+          )}
+
+          <div class="folds">
+          {d.intro && (
+            <section class="fold is-open" data-shot-key="intro" style={`--tone: ${tones[0]}`}>
+              <button type="button" class="fold-head" aria-expanded="true">
+                <span>{d.intro.title}</span>
+                <span class="fold-mark" aria-hidden="true" />
+              </button>
+              <div class="fold-body">
+                <div class="min-h-0">
+                  <div class="intro px-6 pt-2 pb-8 sm:px-8">
+                    {d.intro.body
+                      .trim()
+                      .split(/\n\s*\n/)
+                      .map((para) => (
+                        <p>
+                          {para.split('\n').map((line, i, all) => (
+                            <>
+                              {line}
+                              {i < all.length - 1 && <br />}
+                            </>
+                          ))}
+                        </p>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {d.highlights.map((h, k) => (
+            <section class="fold" data-shot-key={k} style={`--tone: ${tones[(k + 1) % tones.length]}`}>
+              <button type="button" class="fold-head" aria-expanded="false">
+                <span>
+                  <span class="mr-3 tabular-nums opacity-50">{String(k + 1).padStart(2, '0')}</span>
+                  {h.title}
+                </span>
+                <span class="fold-mark" aria-hidden="true" />
+              </button>
+              <div class="fold-body">
+                <div class="min-h-0">
+                  <div class="hl-body bg-linen/70 mx-3 mb-3 rounded-[4px] p-5 text-[15px] leading-relaxed sm:p-6">
+                    <div class="space-y-5">
+                    <div>
+                      <p class="sub">功能描述</p>
+                      <p>{h.desc}</p>
+                    </div>
+                    <div>
+                      <p class="sub">构筑路径</p>
+                      <p>{h.path}</p>
+                    </div>
+                    {h.future && (
+                      <div>
+                        <p class="sub">未来优化方向</p>
+                        <p>{h.future}</p>
+                      </div>
+                    )}
+                    </div>
+                    {h.images.length > 0 ? (
+                      <div class="gal hl-gal" data-gal>
+                        <div class="gal-track" data-gal-track>
+                          {h.images.map((img, n) => (
+                            <Image src={img} alt={`${h.title}（${n + 1}）`} widths={[400, 800]} sizes="(min-width: 768px) 300px, 90vw" class="gal-img" />
+                          ))}
+                        </div>
+                        {h.images.length > 1 && (
+                          <div class="gal-nav">
+                            <button type="button" data-gal-step="-1" aria-label="上一张">←</button>
+                            <span data-gal-count>1 / {h.images.length}</span>
+                            <button type="button" data-gal-step="1" aria-label="下一张">→</button>
+                          </div>
+                        )}
+                      </div>
+                    ) : h.video ? (
+                      <video src={h.video} muted autoplay loop playsinline preload="none" class="w-full rounded-[4px]" />
+                    ) : h.image ? (
+                      <Image src={h.image} alt={h.title} widths={[480, 960]} sizes="(min-width: 768px) 560px, 100vw" class="w-full rounded-[4px]" />
+                    ) : (
+                      <div class="todo-box">
+                        图片占位
+                        <br />
+                        {h.file}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+          ))}
+          </div>
+          {/* 电脑：展开一个亮点后，底部的小标签用来切换和收起 */}
+          <nav class="fold-tabs" aria-label="切换亮点">
+            {d.intro && <button type="button" data-fold-go="intro">{d.intro.title}</button>}
+            {d.highlights.map((_, k) => (
+              <button type="button" data-fold-go={k}>{String(k + 1).padStart(2, '0')}</button>
+            ))}
+            <button type="button" data-fold-go="none" class="fold-tabs-close">收起</button>
+          </nav>
+        </div>
+
+        {/* 电脑右栏：当前亮点对应的截图 */}
+        <aside class="shot-col" aria-live="polite">
+          <div class="shot-pane is-on" data-shot="intro">
+            <p class="shot-hint">点击左侧亮点查看对应界面</p>
+            <div class="shot-frame">
+              {d.poster && <Image src={d.poster} alt={d.posterAlt} widths={[400, 800]} sizes="320px" class="shot-img" />}
+            </div>
+          </div>
+          {d.highlights.map((h, k) => (
+            <div class="shot-pane" data-shot={k}>
+              <p class="shot-title">
+                <span class="mr-2 tabular-nums">{String(k + 1).padStart(2, '0')}</span>
+                {h.title}
+              </p>
+              <div class="gal shot-gal" data-gal>
+                <div class="gal-track shot-track" data-gal-track>
+                  {h.images.map((img, n) => (
+                    <div class="shot-frame">
+                      <Image src={img} alt={`${h.title}（${n + 1}）`} widths={[400, 800]} sizes="320px" class="shot-img" />
+                    </div>
+                  ))}
+                </div>
+                {h.images.length > 1 && (
+                  <div class="gal-nav">
+                    <button type="button" data-gal-step="-1" aria-label="上一张">←</button>
+                    <span data-gal-count>1 / {h.images.length}</span>
+                    <button type="button" data-gal-step="1" aria-label="下一张">→</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </aside>
+        </div>
+      </template>
+    </>
+  )
+}
+
+{
+  d && d.tabs.length > 0 && (
+    <>
+      <!-- 左侧：竖排小卡片（手机横排），点击切换右侧项目 -->
+      <template data-face-for={id} data-tabs>
+        <div class="face-media">
+          <div class:list={['tab-list', id === 'venture' && 'is-tint']} role="tablist">
+            {d.tabs.map((t, k) => (
+              <button type="button" role="tab" data-tab-btn={k} aria-selected={k === d.defaultTab ? 'true' : 'false'} class:list={['tab', k === d.defaultTab && 'is-on']}>
+                {t.cover && (
+                  <span class:list={['tab-cover', `fit-${t.coverFit}`]} aria-hidden="true">
+                    <Image src={t.cover} alt="" widths={[400, 800]} sizes="(min-width: 768px) 420px, 30vw" />
+                  </span>
+                )}
+                <span class="tab-no text-[11px] tabular-nums opacity-60">{String(k + 1).padStart(2, '0')}</span>
+                <span class="tab-name">
+                  {t.short}
+                  {(t.keywords ?? t.tags) && <span class="tab-tags">{t.keywords ?? t.tags}</span>}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </template>
+
+      <template data-side-for={id}>
+        <div class="side pb-12">
+          {d.tabs.map((t, k) => (
+            <article data-tab-panel={k} hidden={k !== d.defaultTab} class="tab-panel">
+              <header>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <h2 class="text-2xl font-semibold sm:text-3xl">
+                  {t.title}
+                  {t.subtitle && <span class="font-normal opacity-60">｜{t.subtitle}</span>}
+                  {t.logo && <Image src={t.logo} alt="" widths={[160, 320]} sizes="120px" class="title-logo" />}
+                </h2>
+                {t.links.length > 0 && (
+                  <div class="flex shrink-0 flex-wrap gap-2 sm:pt-1">
+                    {t.links.map((l) =>
+                      missing(l.href) ? (
+                        <span class="link-pill is-pending">{l.label.replace(/（PDF）/, '')} · 报告整理中</span>
+                      ) : (
+                        <a href={l.href} target="_blank" rel="noopener" class="link-pill">
+                          {l.label} ↗
+                        </a>
+                      ),
+                    )}
+                  </div>
+                )}
+                </div>
+                {(t.period || t.tags) && <p class="mt-2 text-xs tracking-[0.15em] opacity-60">{[t.period, t.tags].filter(Boolean).join('｜')}</p>}
+                {t.lede && <p class="text-ink-soft mt-5 text-[15px] leading-[1.9]">{t.lede}</p>}
+              </header>
+
+              {t.hero && <Image src={t.hero} alt={t.heroAlt} widths={[800, 1400, 2000]} sizes="(min-width: 768px) 70vw, 100vw" class="mt-6 w-full rounded-[4px]" />}
+
+              {t.bullets.length > 0 && (
+                <ul class="mt-8">
+                  {t.bullets.map((b) => (
+                    <li class="bullet text-ink-soft text-[15px] leading-[1.9]">{b}</li>
+                  ))}
+                </ul>
+              )}
+
+              {t.twoCol ? (
+                <div class="two-col mt-8">
+                  <div class="col">
+                    {t.sections.slice(0, 1).map((sec) => <Story sec={sec} j={0} ink />)}
+                  </div>
+                  <div class="col space-y-10">
+                    {t.sections.slice(1).map((sec, j) => <Story sec={sec} j={j + 1} ink />)}
+                    {t.stats && (
+                    <section class:list={[t.twoCol ? 'mt-10' : 'mt-10']}>
+                      {t.stats.title && <p class="story-sub mb-4">{t.stats.title}</p>}
+                      <ul class:list={['stat-strip', t.stats.stack && 'is-stack']}>
+                        {t.stats.items.map((it, i) => (
+                          <li>
+                            {splitNums(it).map(({ part, num }) => (num ? <span class="stat-num">{part}</span> : part))}
+                            {i < t.stats!.items.length - 1 && t.stats!.sep && <span class="sr-only">{t.stats!.sep}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {t.stats && !t.stats.after && (
+                    <section class:list={[t.twoCol ? 'mt-10' : 'mt-10']}>
+                      {t.stats.title && <p class="story-sub mb-4">{t.stats.title}</p>}
+                      <ul class:list={['stat-strip', t.stats.stack && 'is-stack']}>
+                        {t.stats.items.map((it, i) => (
+                          <li>
+                            {splitNums(it).map(({ part, num }) => (num ? <span class="stat-num">{part}</span> : part))}
+                            {i < t.stats!.items.length - 1 && t.stats!.sep && <span class="sr-only">{t.stats!.sep}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                  {t.sections.map((sec, j) => (
+                    <div class:list={[t.photosBelow ? 'mt-10' : 'mt-12']}>
+                      <Story sec={t.photosBelow ? { ...sec, photo: undefined, photoFile: undefined } : sec} j={j} />
+                    </div>
+                  ))}
+                  {t.photosBelow && (
+                    <div class="photo-row mt-12" data-zoom-group>
+                      {t.sections.filter((sec) => sec.photo).map((sec) => (
+                        <figure class="photo-row-item">
+                          <button type="button" data-zoom={zoom.get(sec.photo!)} data-alt={sec.caption ?? sec.photoAlt} class="block h-full cursor-zoom-in" aria-label={`放大查看：${sec.caption ?? sec.photoAlt}`}>
+                            <Image src={sec.photo!} alt={sec.photoAlt} widths={[400, 800]} sizes="300px" class="photo-row-img" />
+                          </button>
+                          {sec.caption && <figcaption class="mt-2 text-xs opacity-60">{sec.caption}</figcaption>}
+                        </figure>
+                      ))}
+                    </div>
+                  )}
+                  {t.stats && t.stats.after && (
+                    <section class:list={[t.twoCol ? 'mt-10' : 'mt-10']}>
+                      {t.stats.title && <p class="story-sub mb-4">{t.stats.title}</p>}
+                      <ul class:list={['stat-strip', t.stats.stack && 'is-stack']}>
+                        {t.stats.items.map((it, i) => (
+                          <li>
+                            {splitNums(it).map(({ part, num }) => (num ? <span class="stat-num">{part}</span> : part))}
+                            {i < t.stats!.items.length - 1 && t.stats!.sep && <span class="sr-only">{t.stats!.sep}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </>
+              )}
+
+              {t.findings.length > 0 && <section class="mt-10">
+                <p class="sec">关键发现</p>
+                <ol class="mt-2">
+                  {t.findings.map((f) => (
+                    <li class="finding">
+                      <p class="big">{splitFigure(f.figure).map(({ part, unit }) => (unit ? <span class="unit">{part}</span> : part))}</p>
+                      <p class="mt-3 text-base font-semibold leading-snug sm:text-lg">{f.claim}</p>
+                      <p class="text-ink-soft mt-2 text-sm leading-relaxed">{f.detail}</p>
+                      {f.image && <Image src={f.image} alt={f.claim} widths={[600, 1100]} sizes="(min-width: 768px) 760px, 100vw" class="mt-5 w-full rounded-[4px]" />}
+                    </li>
+                  ))}
+                </ol>
+              </section>}
+
+              {(t.advice || t.adviceGroups) && (
+                <section class="mt-10">
+                  <p class="sec">我的建议</p>
+                  {t.advice && <p class="text-ink-soft mt-4 text-[15px] leading-[1.9]">{t.advice}</p>}
+                  {t.adviceList.length > 0 && (
+                    <ul class="text-ink-soft mt-2 space-y-1.5 text-[15px] leading-[1.8]">
+                      {t.adviceList.map((it) => (
+                        <li class="flex gap-2">
+                          <span aria-hidden="true">·</span>
+                          <span>{it}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {t.adviceAfter && <p class="text-ink-soft mt-3 text-[15px] leading-[1.9]">{t.adviceAfter}</p>}
+                  {t.adviceGroups?.map((g) => (
+                    <div class="mt-6">
+                      <p class="font-semibold">{g.name}</p>
+                      <ul class="mt-3 space-y-4">
+                        {g.items.map((it) => (
+                          <li class="advice-item">
+                            <p class="text-ink-soft text-[15px] leading-relaxed">{it.text}</p>
+                            {it.basis && <p class="mt-1.5 text-xs leading-relaxed opacity-60">{it.basis}</p>}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  {t.adviceNote && <p class="mt-6 text-[11px] leading-relaxed opacity-50">{t.adviceNote}</p>}
+                </section>
+              )}
+
+              {t.shots.length > 0 && (
+                <section class="mt-10">
+                  <div class="gal shots" data-gal data-zoom-group>
+                    <div class="gal-track shots-track" data-gal-track>
+                      {t.shots.map((g) => (
+                        <figure class="shot">
+                          <button type="button" data-zoom={zoom.get(g.image)} data-alt={g.caption} class="block w-full cursor-zoom-in" aria-label={`放大查看：${g.caption}`}>
+                            <Image src={g.image} alt={g.caption} widths={[480, 960]} sizes="(min-width: 768px) 260px, 90vw" class="w-full rounded-[4px] border border-black/5" />
+                          </button>
+                          <figcaption class="mt-2 text-xs opacity-60">{g.caption}</figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                    <div class="gal-nav shots-nav">
+                      <button type="button" data-gal-step="-1" aria-label="上一张">←</button>
+                      <span data-gal-count>1 / {t.shots.length}</span>
+                      <button type="button" data-gal-step="1" aria-label="下一张">→</button>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {t.ai && (
+                <section class="mt-10">
+                  <p class="sec">AI 协作</p>
+                  <p class="text-ink-soft mt-4 text-[15px] leading-[1.9]">
+                    <Text text={t.ai} />
+                  </p>
+                </section>
+              )}
+
+              {t.gallery && (
+                <section class="mt-12">
+                  <p class="story-sub">{t.gallery.title}</p>
+                  <div class="wall mt-5" data-zoom-group>
+                    {t.gallery.items.map((g) =>
+                      g.image ? (
+                        <button type="button" data-zoom={zoom.get(g.image)} data-alt={g.alt} class="wall-item cursor-zoom-in" aria-label={`放大查看：${g.alt}`}>
+                          <Image src={g.image} alt={g.alt} widths={[600, 1100]} sizes="(min-width: 768px) 600px, 90vw" class="h-full w-auto rounded-[4px]" />
+                        </button>
+                      ) : (
+                        <div class="wall-item todo-box wall-todo">
+                          照片占位
+                          <br />
+                          {g.file}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </section>
+              )}
+
+            </article>
+          ))}
+        </div>
+      </template>
+    </>
+  )
+}
+
+<style>
+  @reference '../../styles/global.css';
+
+  .face-media {
+    position: absolute;
+    inset: 0;
+    padding: 0.75rem;
+  }
+  .side {
+    color: var(--accent);
+  }
+  .demo-btn {
+    @apply inline-block rounded-full px-6 py-3 text-sm font-medium transition-transform hover:-translate-y-0.5;
+    background: var(--accent);
+    color: #f3f1ec;
+  }
+  .fold {
+    background: var(--tone);
+    border-radius: 4px;
+  }
+  .fold-head {
+    @apply flex w-full cursor-pointer items-center justify-between gap-4 px-6 py-5 text-left text-base font-medium sm:px-8 sm:text-lg;
+  }
+  .fold-mark {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+  .fold-mark::before,
+  .fold-mark::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 12px;
+    height: 1px;
+    background: currentColor;
+    transition: transform 0.4s ease;
+  }
+  .fold-mark::after {
+    transform: rotate(90deg);
+  }
+  .fold.is-open .fold-mark::after {
+    transform: rotate(0deg);
+  }
+  /* 展开 / 收起：高度平滑过渡 */
+  .fold-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.5s cubic-bezier(0.6, 0, 0.2, 1);
+  }
+  .fold-body > div {
+    overflow: hidden;
+  }
+  .fold.is-open .fold-body {
+    grid-template-rows: 1fr;
+  }
+  .intro {
+    font-size: 15px;
+    line-height: 2.1;
+    letter-spacing: 0.02em;
+  }
+  .intro p + p {
+    margin-top: 2.2em;
+  }
+  .sub {
+    @apply mb-1 text-xs tracking-[0.2em] opacity-60;
+  }
+  .todo-box {
+    @apply rounded-[4px] border-2 border-dashed p-8 text-center text-sm leading-relaxed;
+    border-color: #e0a400;
+    background: #fff6d6;
+    color: #7a5a00;
+  }
+  /* ── 左侧小卡片切换 ── */
+  .tab-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    height: 100%;
+  }
+  .tab {
+    @apply flex flex-1 cursor-pointer flex-col justify-between rounded-[4px] p-5 text-left transition-colors duration-300;
+    background: #f3f1ec;
+    color: var(--accent);
+  }
+  .tab:hover {
+    background: #fff;
+  }
+  .tab.is-on {
+    background: color-mix(in oklab, var(--accent) 88%, #fff);
+    color: #f3f1ec;
+  }
+  .tab-name {
+    @apply text-lg leading-snug font-medium;
+  }
+  @media (max-width: 767px) {
+    .tab-list {
+      flex-direction: row;
+    }
+    .tab {
+      @apply justify-center p-2.5;
+    }
+    .tab-no {
+      display: none;
+    }
+    .tab-name {
+      @apply text-[12px] leading-snug;
+    }
+  }
+  .tab-panel {
+    animation: panel-in 0.5s ease both;
+  }
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+  .text-ink-soft {
+    color: color-mix(in oklab, var(--accent) 55%, #2b2823);
+  }
+  .sec {
+    @apply text-xs font-medium tracking-[0.3em];
+  }
+  .finding {
+    padding: 1.75rem 0;
+    border-top: 1px solid color-mix(in oklab, var(--accent) 22%, transparent);
+  }
+  .big {
+    font-family: 'Helvetica Neue', -apple-system, 'Segoe UI', Arial, sans-serif;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-size: clamp(2.5rem, 4vw, 3.75rem);
+  }
+  .big .unit {
+    font-size: 0.42em;
+    letter-spacing: 0.05em;
+    margin-left: 0.15em;
+  }
+  /* 数字条 */
+  .stat-strip {
+    @apply flex flex-wrap gap-x-8 gap-y-4 rounded-[4px] px-6 py-6 sm:px-8;
+    background: color-mix(in oklab, var(--accent) 16%, #f3f1ec);
+    border-left: 3px solid var(--accent);
+  }
+  .stat-strip li {
+    @apply text-sm leading-snug;
+  }
+  .stat-num {
+    font-family: 'Helvetica Neue', -apple-system, 'Segoe UI', Arial, sans-serif;
+    font-weight: 300;
+    font-size: 1.9rem;
+    margin: 0 0.15em;
+    color: color-mix(in oklab, var(--accent) 70%, #2b2823);
+  }
+  /* 图文交错：电脑上照片一左一右，文字环绕；手机上照片占满一行 */
+  .story::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+  .story-photo {
+    margin-bottom: 1.25rem;
+  }
+  @media (min-width: 768px) {
+    .story-photo {
+      width: 46%;
+    }
+    .story-photo.is-left {
+      float: left;
+      margin-right: 1.75rem;
+    }
+    .story-photo.is-right {
+      float: right;
+      margin-left: 1.75rem;
+    }
+  }
+  .poem {
+    font-size: 15px;
+    line-height: 2.2;
+    letter-spacing: 0.03em;
+  }
+  .poem p + p {
+    margin-top: 2.4em;
+  }
+  /* 照片墙：瀑布流 */
+  .masonry {
+    columns: 2;
+    column-gap: 0.75rem;
+  }
+  @media (min-width: 1024px) {
+    .masonry {
+      columns: 3;
+    }
+  }
+  .masonry-item {
+    display: block;
+    width: 100%;
+    break-inside: avoid;
+    margin-bottom: 0.75rem;
+    transition: transform 0.4s ease;
+  }
+  button.masonry-item:hover {
+    transform: translateY(-3px);
+  }
+  .wall-todo {
+    @apply p-4 text-xs;
+  }
+  .wall-todo:nth-child(3n) {
+    min-height: 220px;
+  }
+  .wall-todo:nth-child(3n + 1) {
+    min-height: 150px;
+  }
+  .wall-todo:nth-child(3n + 2) {
+    min-height: 180px;
+  }
+  .bullet {
+    padding: 1.1rem 0;
+    border-top: 1px solid color-mix(in oklab, var(--accent) 25%, transparent);
+  }
+  .bullet:last-child {
+    border-bottom: 1px solid color-mix(in oklab, var(--accent) 25%, transparent);
+  }
+  .advice-item {
+    padding-left: 1rem;
+    border-left: 2px solid color-mix(in oklab, var(--accent) 35%, transparent);
+  }
+  .link-pill {
+    @apply inline-block rounded-full border px-4 py-2 text-sm transition-colors;
+    border-color: var(--accent);
+  }
+  a.link-pill:hover {
+    background: var(--accent);
+    color: #f3f1ec;
+  }
+  .link-pill.is-pending {
+    @apply border-dashed opacity-60;
+  }
+  /* 此地右侧：顶部链接，色块贴底；都收起时整体和左侧视频一样高 */
+  .cidi-side {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding-bottom: 0.5rem;
+  }
+  .folds {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .demo-link {
+    @apply inline-flex items-center gap-1.5 text-lg font-medium underline decoration-1 underline-offset-[6px] transition-opacity hover:opacity-70;
+  }
+  /* 亮点展开：电脑文字左、图片右 */
+  @media (min-width: 768px) {
+    .hl-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 40%);
+      gap: 1.75rem;
+      align-items: start;
+    }
+  }
+  .hl-body > .gal,
+  .hl-body > video,
+  .hl-body > .todo-box {
+    margin-top: 1.25rem;
+  }
+  @media (min-width: 768px) {
+    .hl-body > .gal,
+    .hl-body > video,
+    .hl-body > .todo-box {
+      margin-top: 0;
+    }
+  }
+  /* 演示视频：不显示音量键，始终静音 */
+  .cidi-video::-webkit-media-controls-mute-button,
+  .cidi-video::-webkit-media-controls-volume-slider,
+  .cidi-video::-webkit-media-controls-volume-control-container {
+    display: none !important;
+  }
+  .fold-head:focus {
+    outline: none;
+  }
+  .fold-head:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: -1px;
+    border-radius: 4px;
+  }
+  .fold.is-open {
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 55%, transparent);
+  }
+  .fold.is-open .fold-head > span:first-child > span {
+    color: var(--accent);
+    opacity: 1;
+  }
+  .shot-col,
+  .fold-tabs {
+    display: none;
+  }
+  @media (min-width: 768px) {
+    .fold-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.25rem 1.1rem;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      font-size: 0.8125rem;
+      transition:
+        max-height 0.45s ease,
+        opacity 0.3s ease,
+        padding-top 0.45s ease;
+    }
+    .cidi-side:has(.folds.has-open) .fold-tabs {
+      max-height: 3rem;
+      opacity: 1;
+      padding-top: 0.9rem;
+    }
+    .fold-tabs button {
+      cursor: pointer;
+      padding: 0.15rem 0;
+      opacity: 0.55;
+      border-bottom: 1px solid transparent;
+      font-variant-numeric: tabular-nums;
+      transition: opacity 0.2s ease;
+    }
+    .fold-tabs button:hover {
+      opacity: 1;
+    }
+    .fold-tabs button.is-on {
+      opacity: 1;
+      font-weight: 600;
+      border-color: var(--accent);
+    }
+    .fold-tabs .fold-tabs-close {
+      margin-left: auto;
+    }
+  }
+  /* 电脑：中栏（色块）+ 右栏（截图），都和视频一样高 */
+  @media (min-width: 768px) {
+    .cidi-grid {
+      display: flex;
+      gap: 2rem;
+      height: 100%;
+    }
+    .cidi-side {
+      flex: 1 1 0;
+      min-width: 0;
+      height: 100%;
+      min-height: 0;
+      padding-bottom: 0;
+    }
+    .folds {
+      flex: 1 1 0;
+      min-height: 0;
+      justify-content: flex-end;
+      gap: 0;
+    }
+    .fold {
+      flex-shrink: 0;
+      max-height: 6rem;
+      margin-top: 0.75rem;
+      transition:
+        max-height 0.45s cubic-bezier(0.6, 0, 0.2, 1),
+        margin-top 0.45s cubic-bezier(0.6, 0, 0.2, 1),
+        opacity 0.3s ease;
+    }
+    /* 展开一个亮点：其他色块收起隐藏，这一块占满中栏 */
+    .folds.has-open > .fold:not(.is-open) {
+      max-height: 0;
+      margin-top: 0;
+      opacity: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .folds.has-open > .fold.is-open {
+      max-height: 100%;
+      margin-top: 0;
+    }
+    .folds.has-open > .fold.is-open .fold-body > div {
+      animation: fold-text-in 0.45s ease both;
+    }
+    @keyframes fold-text-in {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+    }
+    .fold.is-open {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .fold.is-open .fold-body {
+      flex: 1 1 0;
+      min-height: 0;
+    }
+    .fold.is-open .fold-body > div {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .hl-body {
+      display: block;
+    }
+    .hl-gal {
+      display: none;
+    }
+    .shot-col {
+      position: relative;
+      display: block;
+      flex-shrink: 0;
+      height: 100%;
+      width: calc((100svh - 168px - 3.5rem) * 0.54);
+    }
+    .shot-pane {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 0.45s ease,
+        visibility 0s 0.45s;
+    }
+    .shot-pane.is-on {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.45s ease;
+    }
+    .shot-title,
+    .shot-hint {
+      @apply mb-3 min-h-[1.5rem] text-sm leading-snug font-medium;
+      color: var(--accent);
+    }
+    .shot-hint {
+      @apply font-normal tracking-[0.1em] opacity-60;
+      color: inherit;
+    }
+    .shot-gal {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .shot-track {
+      flex: 1 1 0;
+      min-height: 0;
+    }
+    .shot-frame {
+      flex: 1 1 0;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      height: 100%;
+    }
+    .shot-track > .shot-frame {
+      flex: 0 0 100%;
+      scroll-snap-align: start;
+    }
+    .shot-img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+  }
+  /* 小图集：左右翻页 */
+  .gal-track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    border-radius: 4px;
+  }
+  .gal-track::-webkit-scrollbar {
+    display: none;
+  }
+  .gal-img {
+    flex: 0 0 100%;
+    width: 100%;
+    height: auto;
+    scroll-snap-align: start;
+  }
+  .gal-nav {
+    @apply mt-3 flex items-center justify-center gap-4 text-xs tabular-nums;
+  }
+  .gal-nav button {
+    @apply grid h-8 w-8 cursor-pointer place-items-center rounded-full border transition-colors;
+    border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+  }
+  .gal-nav button:hover {
+    background: var(--accent);
+    color: #f3f1ec;
+  }
+  .tab-tags {
+    @apply ml-2 text-xs font-normal opacity-60;
+  }
+  @media (max-width: 767px) {
+    .tab-tags {
+      @apply mt-1 ml-0 block text-[10px];
+    }
+  }
+  /* 看板截图：电脑三张并排，手机左右翻页 */
+  .shot {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+  }
+  @media (min-width: 768px) {
+    .shots-track {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      overflow: visible;
+    }
+    .shots-nav {
+      display: none;
+    }
+  }
+  /* 小卡片背景图：cover 铺满；contain 居中放在淡色底上 */
+  .tab {
+    position: relative;
+    overflow: hidden;
+  }
+  .tab-cover {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .tab-cover :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .tab-cover.fit-contain {
+    display: grid;
+    place-items: center;
+    background: color-mix(in oklab, var(--accent) 22%, #f3f1ec);
+  }
+  .tab-cover.fit-contain :global(img) {
+    width: 72%;
+    height: auto;
+    max-height: 72%;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+  .tab:has(.tab-cover) > :not(.tab-cover) {
+    position: relative;
+    z-index: 1;
+  }
+  .tab:has(.tab-cover) {
+    color: #fff;
+    background: #000;
+  }
+  .tab:has(.tab-cover)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.55), transparent 45%);
+  }
+  .tab:has(.tab-cover) .tab-name {
+    z-index: 2;
+  }
+  .tab:has(.tab-cover):not(.is-on) .tab-cover {
+    opacity: 0.55;
+  }
+  .tab:has(.tab-cover).is-on {
+    box-shadow: inset 0 0 0 3px var(--accent);
+  }
+  .tab:has(.tab-cover).is-on .tab-cover {
+    opacity: 1;
+  }
+  .tab-cover {
+    transition: opacity 0.3s ease;
+  }
+  @media (max-width: 767px) {
+    .tab:has(.tab-cover) .tab-tags {
+      display: none;
+    }
+    .tab-cover.fit-contain :global(img) {
+      opacity: 0.35;
+    }
+  }
+  .story-sub {
+    @apply text-xs font-medium tracking-[0.3em];
+  }
+  .stat-strip.is-stack {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .stat-strip.is-stack li {
+    @apply text-base;
+    color: #2b2823;
+  }
+  .stat-strip.is-stack .stat-num {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: inherit;
+    margin: 0;
+  }
+  /* 反方向的钟：电脑上左右两栏，高度随内容，不出现滚动条 */
+  @media (min-width: 768px) {
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 3rem;
+    }
+  }
+  @media (max-width: 767px) {
+    .two-col .col + .col {
+      margin-top: 2.5rem;
+    }
+  }
+  /* 照片墙：横向一排，大图可看清留言；电脑一屏约 4 张 */
+  .wall {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: 0.75rem;
+    scrollbar-width: thin;
+  }
+  /* 照片按原始比例，统一高度，宽度随比例变化 */
+  .wall-item {
+    flex: 0 0 auto;
+    height: 420px;
+    scroll-snap-align: start;
+    transition: transform 0.4s ease;
+  }
+  .wall-item:hover {
+    transform: translateY(-3px);
+  }
+  @media (max-width: 767px) {
+    .wall-item {
+      height: 360px;
+    }
+  }
+  /* 山姆拼单：照片横排一行，可左右滑动 */
+  .photo-row {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: 0.75rem;
+    scrollbar-width: thin;
+  }
+  .photo-row-item {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+  .photo-row-item button {
+    height: 340px;
+  }
+  .photo-row-img {
+    height: 100%;
+    width: auto;
+    border-radius: 4px;
+  }
+  @media (max-width: 767px) {
+    .photo-row-item button {
+      height: 300px;
+    }
+  }
+  .title-logo {
+    display: inline-block;
+    height: 1.15em;
+    width: auto;
+    margin-left: 0.6rem;
+    vertical-align: -0.2em;
+    border-radius: 3px;
+  }
+  /* 「运营与策划」小卡片：浅紫底，选中时深紫 */
+  .tab-list.is-tint .tab:not(.is-on) {
+    background: color-mix(in oklab, var(--accent) 18%, #f3f1ec);
+  }
+  .tab-list.is-tint .tab:not(.is-on):hover {
+    background: color-mix(in oklab, var(--accent) 28%, #f3f1ec);
+  }
+</style>

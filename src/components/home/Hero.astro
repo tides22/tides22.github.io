@@ -1,0 +1,84 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Text from '../Text.astro';
+import { isTodo } from '../../lib/todo';
+
+interface Props {
+  home: CollectionEntry<'home'>['data'];
+}
+
+const { home } = Astro.props;
+const hasResume = !isTodo(home.resume);
+const dotColors = ['bg-leaf', 'bg-sea', 'bg-sun'];
+---
+
+<section id="top" class="relative isolate overflow-hidden">
+  <!-- 背景光斑 -->
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10">
+    <div class="drift bg-leaf-soft absolute -top-24 -left-20 h-80 w-80 rounded-full blur-3xl"></div>
+    <div
+      class="drift bg-sea-soft absolute top-24 -right-24 h-96 w-96 rounded-full blur-3xl"
+      style="animation-delay: -5s"
+    >
+    </div>
+    <div
+      class="drift bg-sun/25 absolute bottom-0 left-1/3 h-40 w-40 rounded-full blur-3xl"
+      style="animation-delay: -9s"
+    >
+    </div>
+  </div>
+
+  <div
+    class="mx-auto grid max-w-5xl items-center gap-8 px-4 pt-10 pb-14 sm:px-6 sm:pt-16 md:gap-12 md:pb-20"
+  >
+    <div class="reveal order-2 md:order-1">
+      <p class="text-muted text-lg">{home.greeting}</p>
+      <h1 class="font-display mt-1 text-6xl leading-none tracking-wide sm:text-7xl">
+        {home.name}
+      </h1>
+      {home.tagline && <p class="mt-5 text-xl font-medium sm:text-2xl">{home.tagline}</p>}
+
+      <ul class="mt-6 space-y-2 text-[15px] sm:text-base">
+        {
+          home.identity.map((line, i) => (
+            <li class="flex items-start gap-3">
+              <span class:list={['mt-2.5 h-2 w-2 shrink-0 rounded-full', dotColors[i % dotColors.length]]} />
+              <span>{line}</span>
+            </li>
+          ))
+        }
+      </ul>
+
+      <div class="mt-8 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          data-copy={home.email}
+          class="bg-leaf-deep hover:bg-leaf shadow-leaf/30 inline-flex cursor-pointer items-center gap-2 rounded-full px-5 py-2.5 font-medium text-white shadow-lg transition-colors"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+            <path d="m4 7 8 6 8-6"></path>
+          </svg>
+          <span data-copy-label>复制邮箱</span>
+        </button>
+        {
+          hasResume ? (
+            <a
+              href={home.resume}
+              download
+              class="border-ink/15 hover:border-leaf-deep inline-flex items-center gap-2 rounded-full border bg-white/70 px-5 py-2.5 font-medium transition-colors"
+            >
+              下载简历
+            </a>
+          ) : (
+            <span class="inline-flex items-center gap-2 rounded-full border border-transparent px-1 py-2.5">
+              下载简历 <Text text={home.resume} />
+            </span>
+          )
+        }
+      </div>
+      <p class="text-muted mt-3 text-sm break-all">{home.email}</p>
+    </div>
+
+  </div>
+</section>

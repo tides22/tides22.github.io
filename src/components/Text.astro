@@ -1,0 +1,22 @@
+---
+// 普通文字照常显示，【待补……】显示成黄色虚线占位块
+import { splitTodo } from '../lib/todo';
+
+interface Props {
+  text: string;
+}
+
+const parts = splitTodo(Astro.props.text);
+---
+
+{
+  parts.map((part) =>
+    part.todo ? (
+      <mark class="border-sun bg-sun-soft text-ink rounded-md border border-dashed px-1.5 py-0.5 text-[0.85em] font-medium">
+        {part.text}
+      </mark>
+    ) : (
+      part.text
+    ),
+  )
+}

@@ -1,0 +1,29 @@
+{
+  "name": "hanxinxi-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "fonts": "node scripts/subset-fonts.mjs",
+    "exif": "node scripts/strip-exif.mjs",
+    "dev": "npm run exif && npm run fonts && astro dev",
+    "build": "npm run exif && npm run fonts && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "5.18.2",
+    "lxgw-wenkai-webfont": "1.7.0",
+    "sharp": "0.35.5",
+    "tailwindcss": "4.3.3"
+  },
+  "devDependencies": {
+    "subset-font": "2.9.0"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true,
+    "esbuild@0.27.7": true,
+    "sharp@0.34.5": true,
+    "sharp@0.35.5": true
+  }
+}

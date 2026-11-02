@@ -1,0 +1,39 @@
+---
+// 外链按钮；链接还没补的显示成占位块
+import Text from './Text.astro';
+import { isTodo } from '../lib/todo';
+
+interface Props {
+  links: { label: string; href: string }[];
+  class?: string;
+}
+
+const { links, class: className } = Astro.props;
+---
+
+{
+  links.length > 0 && (
+    <div class:list={['flex flex-wrap items-center gap-2', className]}>
+      {links.map((link) =>
+        isTodo(link.href) || isTodo(link.label) ? (
+          <span class="inline-flex flex-wrap items-center gap-1.5 text-sm">
+            <Text text={link.label} />
+            <Text text={isTodo(link.href) ? link.href : ''} />
+          </span>
+        ) : (
+          <a
+            href={link.href}
+            target={link.href.startsWith('http') ? '_blank' : undefined}
+            rel={link.href.startsWith('http') ? 'noopener' : undefined}
+            class="border-sea/30 text-sea-deep hover:bg-sea-soft inline-flex items-center gap-1 rounded-full border bg-white px-3.5 py-1.5 text-sm font-medium transition-colors"
+          >
+            {link.label}
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M7 17 17 7M9 7h8v8" />
+            </svg>
+          </a>
+        ),
+      )}
+    </div>
+  )
+}
