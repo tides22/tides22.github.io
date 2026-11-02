@@ -25,6 +25,16 @@ heroAlt: 韩昕汐站在海边礁石上，望向远处的大海和天空
 email: 123090152@link.cuhk.edu.cn
 # 简历：把公开版 PDF 放进 public/files/ 后，这里改成 /files/文件名.pdf
 resume: "【待补：简历-公开版.pdf】"
+# 页尾技能清单：每行一个分类，文字原样显示
+skills:
+  - label: 产品
+    items: 需求分析 · PRD · Figma · 可用性测试
+  - label: 数据
+    items: SQL · Python · Tableau · Power BI · SPSS
+  - label: AI
+    items: 大模型 API · RAG · Claude Code · Lovable
+  - label: 语言
+    items: IELTS 7.5 · GRE 325
 
 stats:
   - value: "2,000+"

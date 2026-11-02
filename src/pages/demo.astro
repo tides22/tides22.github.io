@@ -3,7 +3,6 @@
 import '../styles/global.css';
 import { Image, getImage } from 'astro:assets';
 import { getEntry } from 'astro:content';
-import Text from '../components/Text.astro';
 import CardDetail from '../components/demo/CardDetail.astro';
 import { isTodo } from '../lib/todo';
 
@@ -104,7 +103,6 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
             <button type="button" data-copy={home.email} class="link-line cursor-pointer">
               邮箱<span data-copy-note class="copied" aria-live="polite"></span>
             </button>
-            {hasResume ? <a href={home.resume} target="_blank" rel="noopener" class="link-line">简历</a> : <span>简历 <Text text={home.resume} /></span>}
           </p>
         </div>
       </section>
@@ -154,12 +152,39 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
         </div>
       </section>
 
+      <!-- ───── 技能清单：左边分类（小字），右边技能 ───── -->
+      {
+        home.skills.length > 0 && (
+          <section class="mx-auto max-w-3xl px-6 pt-16 sm:px-12">
+            <p class="text-bone/55 text-xs tracking-[0.35em]">SKILLS</p>
+            <dl class="mt-6">
+              {home.skills.map((s) => (
+                <div class="skill-row">
+                  <dt class="text-bone/55 text-xs tracking-[0.2em] sm:text-sm">{s.label}</dt>
+                  <dd class="text-bone/90 text-[15px] leading-relaxed sm:text-base">{s.items}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )
+      }
+
       <section class="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center">
         <p class="text-bone/55 text-xs tracking-[0.35em]">LET'S TALK</p>
         <p class="mt-4 text-3xl font-light sm:text-5xl">一起聊聊？</p>
-        <button type="button" data-copy={home.email} class="bg-bone text-umber mt-8 cursor-pointer rounded-full px-6 py-3 text-sm">
-          <span data-copy-label>复制邮箱 · {home.email}</span>
-        </button>
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-3 text-sm">
+          <button type="button" data-copy={home.email} class="bg-bone text-umber cursor-pointer rounded-full px-6 py-3">
+            <span data-copy-label>复制邮箱 · {home.email}</span>
+          </button>
+          <span class="text-bone/40 hidden sm:inline" aria-hidden="true">·</span>
+          {hasResume ? (
+            <a href={home.resume} target="_blank" rel="noopener" class="link-line">
+              简历 PDF
+            </a>
+          ) : (
+            <span class="text-bone/45">简历整理中</span>
+          )}
+        </div>
       </section>
     </main>
 
@@ -285,6 +310,24 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
         }
       }
 
+      /* 技能清单：左列分类名固定宽度，右列技能换行后仍然对齐 */
+      .skill-row {
+        display: grid;
+        grid-template-columns: 3.5rem minmax(0, 1fr);
+        gap: 1rem;
+        align-items: baseline;
+        padding: 0.9rem 0;
+        border-top: 1px solid rgb(243 241 236 / 0.12);
+      }
+      .skill-row:last-child {
+        border-bottom: 1px solid rgb(243 241 236 / 0.12);
+      }
+      @media (min-width: 640px) {
+        .skill-row {
+          grid-template-columns: 5rem minmax(0, 1fr);
+          gap: 2rem;
+        }
+      }
       /* 邮箱、简历：细横线，悬停时从左往右重新画一遍 */
       .link-line {
         position: relative;

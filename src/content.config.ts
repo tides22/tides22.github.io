@@ -20,6 +20,8 @@ const home = defineCollection({
       heroAlt: z.string().default(''),
       email: z.string(),
       resume: z.string(),
+      // 页尾技能清单：label 是左边的分类名，items 是右边的技能（原样显示）
+      skills: z.array(z.object({ label: z.string(), items: z.string() })).default([]),
       stats: z.array(
         z.object({
           value: z.string(),
