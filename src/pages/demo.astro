@@ -762,7 +762,7 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
           const h = innerWidth < 768 ? innerHeight * 0.5 : innerHeight - 168;
           return { left: innerWidth < 768 ? (innerWidth - h * ratio) / 2 : 24, top: innerWidth < 768 ? 72 : 80, width: h * ratio, height: h };
         }
-        if (innerWidth < 768) return { left: 16, top: 72, width: innerWidth - 32, height: tabs ? 92 : innerHeight * 0.5 };
+        if (innerWidth < 768) return { left: 16, top: 72, width: innerWidth - 32, height: tabs ? 100 : innerHeight * 0.5 };
         return { left: 24, top: 80, width: tabs ? Math.min(innerWidth * 0.3, 460) : Math.min(innerWidth * 0.4, 620), height: innerHeight - 168 };
       };
       const place = (el: HTMLElement, r: { left: number; top: number; width: number; height: number }) =>
