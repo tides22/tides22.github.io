@@ -800,6 +800,36 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
         setTimeout(() => stageBody.replaceChildren(), 500);
       };
       // 色块：一次只展开一个；fold 为 null 时全部收起
+      // 电脑：展开的色块按内容高度显示，剩下的空间先放它后面的色块，再放前面的，放不下的隐藏
+      const FOLD_GAP = 12;
+      const TABS_H = 48;
+      const fitFolds = () => {
+        const folds = stageBody.querySelector<HTMLElement>('.folds');
+        if (!folds) return;
+        const all = [...folds.children] as HTMLElement[];
+        all.forEach((f) => f.classList.remove('is-hidden'));
+        const open = all.find((f) => f.classList.contains('is-open'));
+        if (!open || innerWidth < 768) return;
+        const side = folds.parentElement!;
+        const others = [...side.children].filter((c) => c !== folds && !c.matches('.fold-tabs')) as HTMLElement[];
+        const avail = side.clientHeight - others.reduce((h, c) => h + c.offsetHeight, 0) - TABS_H;
+        const headH = open.querySelector<HTMLElement>('.fold-head')!.offsetHeight;
+        const body = open.querySelector<HTMLElement>('.fold-body > div')!;
+        body.scrollTop = 0;
+        let left = avail - (headH + body.scrollHeight);
+        const k = all.indexOf(open);
+        const keep = new Set([open]);
+        const take = (f: HTMLElement) => {
+          if (left < headH + FOLD_GAP) return false;
+          left -= headH + FOLD_GAP;
+          keep.add(f);
+          return true;
+        };
+        for (let i = k + 1; i < all.length && take(all[i]); i++);
+        for (let i = k - 1; i >= 0 && take(all[i]); i--);
+        all.forEach((f) => f.classList.toggle('is-hidden', !keep.has(f)));
+      };
+      addEventListener('resize', fitFolds);
       const setFold = (fold: HTMLElement | null) => {
         stageBody.querySelectorAll<HTMLElement>('.fold').forEach((f) => {
           const on = f === fold;
@@ -808,6 +838,7 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
           f.querySelectorAll('video').forEach((v) => (on ? v.play().catch(() => {}) : v.pause()));
         });
         stageBody.querySelector('.folds')?.classList.toggle('has-open', !!fold);
+        fitFolds();
         // 「此地」右栏：显示对应亮点的截图；没展开或展开「引入」时显示首页
         const key = fold?.dataset.shotKey ?? 'intro';
         stageBody.querySelectorAll<HTMLElement>('[data-shot]').forEach((p) => p.classList.toggle('is-on', p.dataset.shot === key));

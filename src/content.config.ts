@@ -135,6 +135,9 @@ const details = defineCollection({
       videoRatio: z.number().optional(),
       poster: image().optional(),
       posterAlt: z.string().default(''),
+      // 「此地」右栏默认显示的截图
+      homeShot: image().optional(),
+      homeShotAlt: z.string().default(''),
       demo: z.object({ label: z.string(), href: z.string(), note: z.string().optional() }).optional(),
       intro: z.object({ title: z.string(), body: z.string() }).optional(),
       highlights: z

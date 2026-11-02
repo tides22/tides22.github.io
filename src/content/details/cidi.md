@@ -8,6 +8,9 @@ video: /files/cidi-demo.mp4
 videoRatio: 0.566
 poster: ../../assets/cidi/poster.jpg
 posterAlt: 「此地」演示视频封面
+# 右栏默认截图（没展开亮点或展开「引入」时显示）
+homeShot: ../../assets/cidi/03-timeline.jpg
+homeShotAlt: 「此地」时间轴界面
 
 demo:
   label: 在线体验

@@ -171,7 +171,7 @@ const missing = (href: string) => href.startsWith('/files/') && !existsSync(`pub
           <div class="shot-pane is-on" data-shot="intro">
             <p class="shot-hint">点击左侧亮点查看对应界面</p>
             <div class="shot-frame">
-              {d.poster && <Image src={d.poster} alt={d.posterAlt} widths={[400, 800]} sizes="320px" class="shot-img" />}
+              {d.homeShot && <Image src={d.homeShot} alt={d.homeShotAlt} widths={[400, 800]} sizes="320px" class="shot-img" />}
             </div>
           </div>
           {d.highlights.map((h, k) => (
@@ -780,6 +780,13 @@ const missing = (href: string) => href.startsWith('/files/') && !existsSync(`pub
     .fold-tabs button:hover {
       opacity: 1;
     }
+    .fold-tabs button:focus {
+      outline: none;
+    }
+    .fold-tabs button:focus-visible {
+      opacity: 1;
+      border-color: var(--accent);
+    }
     .fold-tabs button.is-on {
       opacity: 1;
       font-weight: 600;
@@ -818,8 +825,8 @@ const missing = (href: string) => href.startsWith('/files/') && !existsSync(`pub
         margin-top 0.45s cubic-bezier(0.6, 0, 0.2, 1),
         opacity 0.3s ease;
     }
-    /* 展开一个亮点：其他色块收起隐藏，这一块占满中栏 */
-    .folds.has-open > .fold:not(.is-open) {
+    /* 展开一个亮点：放不下的色块收起隐藏（由页面脚本计算哪些放不下） */
+    .folds.has-open > .fold.is-hidden {
       max-height: 0;
       margin-top: 0;
       opacity: 0;
@@ -828,7 +835,6 @@ const missing = (href: string) => href.startsWith('/files/') && !existsSync(`pub
     }
     .folds.has-open > .fold.is-open {
       max-height: 100%;
-      margin-top: 0;
     }
     .folds.has-open > .fold.is-open .fold-body > div {
       animation: fold-text-in 0.45s ease both;
@@ -839,14 +845,15 @@ const missing = (href: string) => href.startsWith('/files/') && !existsSync(`pub
         transform: translateY(6px);
       }
     }
+    /* 展开的色块按内容实际高度显示；比中栏还高时才在内部滚动 */
     .fold.is-open {
-      flex: 1 1 0;
+      flex: 0 1 auto;
       min-height: 0;
       display: flex;
       flex-direction: column;
     }
     .fold.is-open .fold-body {
-      flex: 1 1 0;
+      flex: 0 1 auto;
       min-height: 0;
     }
     .fold.is-open .fold-body > div {
