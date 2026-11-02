@@ -1137,10 +1137,15 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
       });
 
       // 链接带 #cidi 这类锚点时直接打开对应卡片
+      // 打开网站一律显示首页首屏：网址里的 #cidi 之类锚点不再自动打开项目页，浏览器也不恢复上次的滚动位置
+      // 只有从报告页点「← 返回」（带 ?from=report）才直接回到对应项目
+      history.scrollRestoration = 'manual';
+      const params = new URLSearchParams(location.search);
       const initial = location.hash.slice(1);
-      if (document.querySelector(`[data-card="${initial}"]`)) {
-        const tab = new URLSearchParams(location.search).get('tab');
-        history.replaceState(null, '', location.pathname);
+      if (location.hash || location.search) history.replaceState(null, '', location.pathname);
+      scrollTo(0, 0);
+      if (params.get('from') === 'report' && document.querySelector(`[data-card="${initial}"]`)) {
+        const tab = params.get('tab');
         history.pushState({ card: initial }, '', `#${initial}`);
         // 从报告页返回时带 ?tab=序号，直接选中对应的小卡片
         openCard(initial, false, false).then(() => {

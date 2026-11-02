@@ -16,7 +16,7 @@ const title = headings.find((h) => h.depth === 1)?.text ?? report.id;
 const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
 // 返回到「洞察与分析项目」里对应的小卡片（顺序和 analysis.md 一致）
 const tabOf: Record<string, number> = { olist: 0, game: 1, watsons: 2 };
-const back = `/demo?tab=${tabOf[report.id] ?? 0}#analysis`;
+const back = `/demo?from=report&tab=${tabOf[report.id] ?? 0}#analysis`;
 ---
 
 <!doctype html>

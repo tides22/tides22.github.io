@@ -836,6 +836,10 @@ const missing = (href: string) => href.startsWith('/files/') && !existsSync(`pub
     .folds.has-open > .fold.is-open {
       max-height: 100%;
     }
+    /* 展开时整栏从顶部开始排，空间不够放下一个色块时留在底部 */
+    .folds.has-open {
+      justify-content: flex-start;
+    }
     .folds.has-open > .fold.is-open .fold-body > div {
       animation: fold-text-in 0.45s ease both;
     }
