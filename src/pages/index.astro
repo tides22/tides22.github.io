@@ -1,33 +1,17 @@
 ---
-import { getCollection, getEntry } from 'astro:content';
-import Base from '../layouts/Base.astro';
-import Wave from '../components/Wave.astro';
-import Hero from '../components/home/Hero.astro';
-import Stats from '../components/home/Stats.astro';
-import Projects from '../components/home/Projects.astro';
-import Experience from '../components/home/Experience.astro';
-
-const homeEntry = await getEntry('home', 'home');
-const youthEntry = await getEntry('youth', 'youth');
-if (!homeEntry || !youthEntry) throw new Error('找不到 src/content/home.md 或 youth.md');
-
-const home = homeEntry.data;
-const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
-const jobs = (await getCollection('experience')).sort((a, b) => a.data.order - b.data.order);
+// 根地址只做跳转：打开 tides22.github.io 自动去新版首页 /demo/
 ---
-
-<Base
-  title={`${home.name} · 个人作品集`}
-  description={`${home.name}：${home.identity.join('，')}。`}
-  name={home.name}
-  email={home.email}
-  resume={home.resume}
->
-  <main>
-    <Hero home={home} />
-    <Stats stats={home.stats} />
-    <Projects heading={home.sections.projects} projects={projects} />
-    <Wave class="mx-auto max-w-5xl px-4" />
-    <Experience heading={home.sections.experience} jobs={jobs} youth={youthEntry.data} />
-  </main>
-</Base>
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>韩昕汐 · 个人作品集</title>
+    <meta http-equiv="refresh" content="0; url=/demo/" />
+    <link rel="canonical" href="/demo/" />
+    <script is:inline>location.replace('/demo/');</script>
+  </head>
+  <body>
+    <p>正在跳转… 如果没有自动跳转，请<a href="/demo/">点这里</a>。</p>
+  </body>
+</html>
