@@ -264,7 +264,11 @@ const missing = (href: string) => href.startsWith('/files/') && !existsSync(`pub
               {t.bullets.length > 0 && (
                 <ul class="mt-8">
                   {t.bullets.map((b) => (
-                    <li class="bullet text-ink-soft text-[15px] leading-[1.9]">{b}</li>
+                    <li class="bullet text-ink-soft text-[15px] leading-[1.9]">{(() => {
+                      // “· 小标题：正文” → 小标题加粗
+                      const m = b.match(/^(·\s*)([^：]{1,20}：)([\s\S]*)$/);
+                      return m ? <>{m[1]}<strong class="text-ink font-semibold">{m[2]}</strong>{m[3]}</> : b;
+                    })()}</li>
                   ))}
                 </ul>
               )}

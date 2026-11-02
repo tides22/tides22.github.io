@@ -58,14 +58,14 @@ items:
     note: 条大模型训练数据标注与质检
     coverFile: 实习经历卡片图（待补）
     parts:
-      - ref: jiuqian
-        name: 久谦咨询
-        figure: "70+"
-        note: 份中英文专家会议纪要
       - ref: zhipu
         name: 智谱 AI
         figure: "1,800"
         note: 条 SFT / RLHF 数据标注与质检
+      - ref: jiuqian
+        name: 久谦咨询
+        figure: "70+"
+        note: 份中英文专家会议纪要
       - ref: grant-thornton
         name: 致同会计师事务所
         figure: "20+"
