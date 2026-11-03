@@ -8,7 +8,8 @@
     "exif": "node scripts/strip-exif.mjs",
     "dev": "npm run exif && npm run fonts && astro dev",
     "build": "npm run exif && npm run fonts && astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "portfolio": "node tools/portfolio/build.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "4.3.3",
@@ -18,6 +19,8 @@
     "tailwindcss": "4.3.3"
   },
   "devDependencies": {
+    "playwright-core": "^1.64.1",
+    "qrcode": "^1.5.4",
     "subset-font": "2.9.0"
   },
   "allowScripts": {

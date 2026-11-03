@@ -11,3 +11,7 @@ materials/
 
 .DS_Store
 sync/
+
+# 作品集 PDF：模板和输出都只留在本地
+tools/
+exports/
