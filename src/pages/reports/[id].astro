@@ -27,11 +27,20 @@ const back = `/demo?from=report&tab=${tabOf[report.id] ?? 0}#analysis`;
     <meta name="theme-color" content="#f3f1ec" />
     <title>{title} · 韩昕汐</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>
+      // 回到访问者来时的首页版本（/demo 或 /work），判断不了就留在 /demo
+      document.addEventListener('DOMContentLoaded', () => {
+        let home = '/demo';
+        try { const h = sessionStorage.getItem('home'); if (h === '/demo' || h === '/work') home = h; } catch {}
+        const a = document.querySelector('[data-back]');
+        if (a) a.setAttribute('href', a.getAttribute('href').replace(/^\/demo/, home));
+      });
+    </script>
   </head>
   <body class="font-sans">
     <!-- 顶部：返回 + 标题 -->
     <header class="topbar">
-      <a href={back} class="back">← 返回</a>
+      <a href={back} data-back class="back">← 返回</a>
       <p class="top-title">{title}</p>
     </header>
 
