@@ -6,14 +6,16 @@ import { getEntry } from 'astro:content';
 import CardDetail from './CardDetail.astro';
 
 const home = (await getEntry('home', 'home'))!.data;
-// 两个首页入口（/demo/、/work/）共用这一份：order 是卡片顺序（填 id），hideLines 是首屏不显示的行
+// 两个首页入口（/demo/、/work/）共用这一份：order 是卡片顺序（填 id），hideLines 是首屏不显示的行，skillOrder 是页尾技能清单的顺序（填分类名）
 interface Props {
   order?: string[];
   hideLines?: string[];
+  skillOrder?: string[];
 }
-const { order, hideLines = [] } = Astro.props;
+const { order, hideLines = [], skillOrder } = Astro.props;
 const all = (await getEntry('chapters', 'chapters'))!.data.items;
 const chapters = order ? order.map((id) => all.find((c) => c.id === id)!) : all;
+const skills = skillOrder ? skillOrder.map((l) => home.skills.find((s) => s.label === l)!) : home.skills;
 const heroLines = home.heroLines.filter((line) => !hideLines.includes(line));
 
 const no = (i: number) => String(i + 1).padStart(2, '0');
@@ -160,11 +162,11 @@ const heroMobile = home.heroMobile && (await getImage({ src: home.heroMobile, fo
 
       <!-- ───── 技能清单：左边分类（小字），右边技能 ───── -->
       {
-        home.skills.length > 0 && (
+        skills.length > 0 && (
           <section class="mx-auto max-w-3xl px-6 pt-16 sm:px-12">
             <p class="text-bone/55 text-xs tracking-[0.35em]">SKILLS</p>
             <dl class="mt-6">
-              {home.skills.map((s) => (
+              {skills.map((s) => (
                 <div class="skill-row">
                   <dt class="text-bone/55 text-xs tracking-[0.2em] sm:text-sm">{s.label}</dt>
                   <dd class="text-bone/90 text-[15px] leading-relaxed sm:text-base">{s.items}</dd>
